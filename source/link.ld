@@ -1,26 +1,17 @@
 ENTRY(kernel_main)
 
 SECTIONS {
-    . = 0x8400;
+    . = 0x1000;
 
-    .text : {
-        *(.text)        /* main .text section */
-        *(.text.*)      /* any sub-sections like .text.startup or .text.main */
-    }
-
-    .rodata : {
-        *(.rodata)      /* read-only data, like const strings */
-        *(.rodata.*)    /* e.g. .rodata.str1.1 */
-    }
-
-    .data : {
-        *(.data)
-        *(.data.*)
-    }
+    .text : { *(.text .text.*) }
+    .rodata : { *(.rodata .rodata.*) }
+    .data : { *(.data .data.*) }
 
     .bss : {
-        *(.bss)
-        *(.bss.*)
-        *(COMMON)       /* uninitialized globals and static vars */
+        _bss_start = .;
+        *(.bss .bss.* COMMON)
+        _bss_end = .;
     }
+
+    /DISCARD/ : { *(.eh_frame) *(.note.GNU-stack) }
 }

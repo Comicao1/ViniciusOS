@@ -9,6 +9,7 @@ start:
     mov bx, 0
     mov word [buffer2], 0
 
+
     ;call start_os
 
      call clear_screen
@@ -248,125 +249,104 @@ delay_1s_lazy:
 
 ;Fim de BIOS inicio de kernel
 
+CODE_OFFSET equ 0x8
+DATA_OFFSET equ 0x10
+
+KERNEL_LOAD_SEG equ 0x1000
+KERNEL_START_ADDR equ 0x1000
+
+
+
 start_os:
 
+    mov ax, 0x0013
+    int 0x10
 
-    cli                         ; disable interrupts
-    xor ax, ax
-    mov ds, ax
-    mov es, ax
-    mov ss, ax
-    mov sp, 0x7C00              ; stack pointer
+    cli           ; Clear interrupts, disabling all maskable interrupts
+    mov ax, 0x00  ; Load immediate value 0x00 into register AX
+    mov ds, ax    ; Set data segment (DS) to 0x00
+    mov es, ax    ; Set extra segment (ES) to 0x00
+    mov ss, ax    ; Set stack segment (SS) to 0x00
+    mov sp, 0x7c00; Set stack pointer (SP) to 0x7c00, top of the bootloader segment
+    sti           ; Enable interrupts, allowing them to occur again
+    
 
-    call enable_a20
-    call load_kernel      ; <- moved up
-    call load_gdt
-    call enter_protected_mode
+;Load kernel
+mov bx, KERNEL_LOAD_SEG
+mov dh, 0x00
+mov dl, 0x80
+mov cl, 0x04
+mov ch, 0x00
+mov ah, 0x02 ; BIOS: Read sectors
+mov al, 32 ; Read 1 sector
+int 0x13
 
-; --------------------------
-; [PROTECTED MODE START]
-; --------------------------
-[bits 32]
-protected_mode_entry:
-    mov ax, 0x10
+jc disk_read_error
+
+
+load_PM:
+    cli
+    lgdt[gdt_descriptor]
+    mov eax, cr0
+    or al, 1
+    mov cr0, eax
+    jmp CODE_OFFSET:PModeMain
+
+
+disk_read_error:
+    hlt
+
+;GDT Implemetation
+
+gdt_start:
+    dd 0x0
+    dd 0x0
+
+    ; Code segment descriptor
+    dw 0xFFFF       ; Limte
+    dw 0x0000       ; Base
+    db 0x00         ; Base
+    db 10011010b    ; Access byte
+    db 11001111b    ; Flags
+    db 0x00         ; Base
+
+    ; Data segment descriptor
+    dw 0xFFFF       ; Limte
+    dw 0x0000       ; Base
+    db 0x00         ; Base
+    db 10010010b    ; Access byte
+    db 11001111b    ; Flags
+    db 0x00         ; Base
+
+gdt_end:
+
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1 ; Size of GDT -1
+    dd gdt_start 
+
+
+[BITS 32]
+PModeMain:
+    mov ax, DATA_OFFSET
     mov ds, ax
     mov es, ax
     mov fs, ax
-    mov gs, ax
     mov ss, ax
+    mov gs, ax
+    mov ebp, 0x9C00
+    mov esp, ebp
 
-    mov esp, 0x90000
-
+    in al, 0x92
+    or al, 2
+    out 0x92, al
 
     mov al, 'A'
     mov ah, 0x0f
     mov [0xb8000], ax
 
-    ;jmp $
+    fninit
 
-    ;jmp $
-    
-    jmp dword 0x08:0x00008400
-         ; Jump to loaded kernel in protected mode
-
-
-; --------------------------
-; Enable A20 Line (quick method)
-; --------------------------
-[bits 16]
-enable_a20:
-    in al, 0x92
-    or al, 00000010b
-    out 0x92, al
-    ret
-
-; --------------------------
-; Load GDT
-; --------------------------
-load_gdt:
-    lgdt [gdt_descriptor]
-    ret
-
-; --------------------------
-; Enter Protected Mode
-; --------------------------
-enter_protected_mode:
-    mov eax, cr0
-    or eax, 1
-    mov cr0, eax
-    jmp 0x08:protected_mode_entry   ; Far jump to flush pipeline
-
-; --------------------------
-; GDT Setup
-; --------------------------
-gdt_start:
-    dq 0x0000000000000000          ; Null descriptor
-
-gdt_code:                          ; Code segment descriptor
-    dw 0xFFFF                      ; Limit low
-    dw 0x0000                      ; Base low
-    db 0x00                        ; Base middle
-    db 10011010b                   ; Access byte
-    db 11001111b                   ; Flags and limit high
-    db 0x00                        ; Base high
-
-gdt_data:                          ; Data segment descriptor
-    dw 0xFFFF
-    dw 0x0000
-    db 0x00
-    db 10010010b
-    db 11001111b
-    db 0x00
-
-gdt_end:
-
-gdt_descriptor:
-    dw gdt_end - gdt_start - 1
-    dd gdt_start
-
-load_kernel:
-    mov ah, 0x02          ; BIOS: Read sectors
-    mov al, 0x01          ; Read 1 sector
-    mov ch, 0x00          ; Cylinder
-    mov dh, 0x00          ; Head
-    mov cl, 3          ; Sector 2 (starts at 1)
-    mov dl, [boot_drive]  ; Drive
-
-    mov bx, 0x0840        ; Load address: 0x0000:0600
-    mov es, bx
-    xor bx, bx
-
-    int 0x13
-    jc disk_error
-
-    ret
-
-disk_error:
-    ; print error or halt
-
-    mov si, error
-    call print_string
-    ret
+    jmp CODE_OFFSET:KERNEL_START_ADDR
 
 strings:
     db "==[ ViniciusOS BIOS ]==", 0
