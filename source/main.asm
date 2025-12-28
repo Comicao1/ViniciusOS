@@ -9,8 +9,8 @@ start:
     mov bx, 0
     mov word [buffer2], 0
 
-
-    ;call start_os
+    call get_memory_map
+    call start_os
 
      call clear_screen
      mov si, strings
@@ -23,6 +23,42 @@ start:
 
 
      jmp loop
+
+
+E820_BUFFER    equ 0x5000
+E820_ENTRY_SIZE equ 20
+
+get_memory_map:
+    xor ebx, ebx           ; continuation value = 0
+    mov si, E820_BUFFER    ; ponteiro (16-bit) para buffer
+    mov word [entries_count], 0
+
+.e820_next:
+    mov eax, 0xE820
+    mov edx, 0x534D4150    ; 'SMAP'
+    mov ecx, E820_ENTRY_SIZE
+
+    mov ax, si
+    shr ax, 4
+    mov es, ax
+    mov di, si
+    and di, 0x000F
+
+    int 0x15
+    jc .done
+
+    cmp eax, 0x534D4150
+    jne .done
+
+    add si, E820_ENTRY_SIZE
+    inc word [entries_count]
+    test ebx, ebx
+    jnz .e820_next
+
+.done:
+    ret
+
+entries_count: dw 0
 
 
 
@@ -268,13 +304,13 @@ start_os:
     mov es, ax    ; Set extra segment (ES) to 0x00
     mov ss, ax    ; Set stack segment (SS) to 0x00
     mov sp, 0x7c00; Set stack pointer (SP) to 0x7c00, top of the bootloader segment
-    sti           ; Enable interrupts, allowing them to occur again
+    ;sti           ; Enable interrupts, allowing them to occur again
     
 
 ;Load kernel
 mov bx, KERNEL_LOAD_SEG
 mov dh, 0x00
-mov dl, 0x80
+mov dl, [boot_drive]
 mov cl, 0x04
 mov ch, 0x00
 mov ah, 0x02 ; BIOS: Read sectors
@@ -346,7 +382,15 @@ PModeMain:
 
     fninit
 
+    mov ecx, [entries_count]       ; Carrega contagem
+    mov eax, 0x5000                ; Endereço do mapa
+
+    push ecx                       ; Arg2: count (NÃO multiplique por 24)
+    push eax                       ; Arg1: addr
+    push dword 0                   ; Fake Return Address (para alinhar a pilha para o compilador C)
+
     jmp CODE_OFFSET:KERNEL_START_ADDR
+
 
 strings:
     db "==[ ViniciusOS BIOS ]==", 0

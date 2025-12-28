@@ -3,7 +3,10 @@ ENTRY(kernel_main)
 SECTIONS {
     . = 0x1000;
 
-    .text : { *(.text .text.*) }
+    .text : {
+            *(.text.entry)   /* GARANTE que a kernel_main venha PRIMEIRO */
+            *(.text .text.*) /* Coloca o código de oi() e o resto DEPOIS */
+        }
     .rodata : { *(.rodata .rodata.*) }
     .data : { *(.data .data.*) }
 
