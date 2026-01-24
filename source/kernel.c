@@ -1,6 +1,6 @@
 #include "headers/idt/idt.h"
 #include "headers/memory/memory.h"
-
+#include "headers/text/fonts.h"
 void kernel_main(uint32 e820_map_addr, uint32 e820_entry_count) {
     e820_entry_t *map = (e820_entry_t*)e820_map_addr;
 
