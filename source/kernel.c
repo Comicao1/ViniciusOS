@@ -31,7 +31,7 @@ void kernel_main(uint32 e820_map_addr, uint32 e820_entry_count) {
     draw_text(100, 100, "EXCECAO DE DIVISAO POR 0", 1);
     // 5. Ativa Paging
     enable_paging((uint32)page_directory);
-
+    
     // 6. INICIALIZA O PMM
     // Agora que a memória virtual funciona, configuramos o físico.
     pmm_init(map, e820_entry_count);
