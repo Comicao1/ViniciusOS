@@ -23,10 +23,10 @@ echo Compiling kernel C files...
 i686-elf-gcc -m32 -ffreestanding -c source/kernel.c -o "%OBJ%\kernel.o"
 i686-elf-gcc -m32 -ffreestanding -c source/headers/idt/idt.c -o "%OBJ%\idt.o"
 i686-elf-gcc -m32 -ffreestanding -c source/headers/gdt/gdt.c -o "%OBJ%\gdt.o"
-i686-elf-gcc -m32 -ffreestanding -c source/headers/gdt/gdt.c -o "%OBJ%\memory.o"
 i686-elf-gcc -m32 -ffreestanding -c source/headers/text/fonts.c -o "%OBJ%\fonts.o"
 i686-elf-gcc -m32 -ffreestanding -c source/headers/console/console.c -o "%OBJ%\console.o"
 i686-elf-gcc -m32 -ffreestanding -c source/headers/memory/memory.c -o "%OBJ%\memory.o"
+i686-elf-gcc -m32 -ffreestanding -c source/headers/memory/kheap.c -o "%OBJ%\kheap.o"
 
 echo Linking kernel ELF...
 i686-elf-ld -T source/link.ld -m elf_i386 ^
@@ -37,6 +37,7 @@ i686-elf-ld -T source/link.ld -m elf_i386 ^
     "%OBJ%\fonts.o" ^
     "%OBJ%\console.o" ^
     "%OBJ%\memory.o" ^
+    "%OBJ%\kheap.o" ^
     -o "%BIN%\kernel.elf"
 
 echo Converting kernel to binary...

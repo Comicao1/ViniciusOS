@@ -3,6 +3,7 @@
 #include "headers/text/fonts.h"
 #include "headers/console/console.h"
 #include "headers/gdt/gdt.h"
+#include "headers/memory/kheap.h"
 void kernel_main(uint32 e820_map_addr, uint32 e820_entry_count) {
     e820_entry_t *map = (e820_entry_t*)e820_map_addr;
     for (int i = 0; i < 1024; ++i) page_directory[i] = 0;
@@ -26,7 +27,12 @@ void kernel_main(uint32 e820_map_addr, uint32 e820_entry_count) {
     gdt_init();
     pic_remap();
     idt_init();
-    console_put_string("Ola turo pao");
+    kheap_init();
+
+    void* a = kmalloc(10);
+    void* b = kmalloc(20);
+    console_put_string("Malloc success!");
+    kfree(a); // Should merge if b is freed later
     asm volatile("sti"); 
     for(;;) {
         asm volatile("hlt");

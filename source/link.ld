@@ -15,6 +15,6 @@ SECTIONS {
         *(.bss .bss.* COMMON)
         _bss_end = .;
     }
-
+    end = .;
     /DISCARD/ : { *(.eh_frame) *(.note.GNU-stack) }
 }
