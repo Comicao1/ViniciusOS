@@ -22,6 +22,8 @@ nasm -f elf32 source/headers/idt/isr_wrappers.asm -o "%OBJ%\isr_wrappers.o"
 echo Compiling kernel C files...
 i686-elf-gcc -m32 -ffreestanding -c source/kernel.c -o "%OBJ%\kernel.o"
 i686-elf-gcc -m32 -ffreestanding -c source/headers/idt/idt.c -o "%OBJ%\idt.o"
+i686-elf-gcc -m32 -ffreestanding -c source/headers/gdt/gdt.c -o "%OBJ%\gdt.o"
+i686-elf-gcc -m32 -ffreestanding -c source/headers/gdt/gdt.c -o "%OBJ%\memory.o"
 i686-elf-gcc -m32 -ffreestanding -c source/headers/text/fonts.c -o "%OBJ%\fonts.o"
 i686-elf-gcc -m32 -ffreestanding -c source/headers/console/console.c -o "%OBJ%\console.o"
 i686-elf-gcc -m32 -ffreestanding -c source/headers/memory/memory.c -o "%OBJ%\memory.o"
@@ -30,6 +32,7 @@ echo Linking kernel ELF...
 i686-elf-ld -T source/link.ld -m elf_i386 ^
     "%OBJ%\kernel.o" ^
     "%OBJ%\idt.o" ^
+    "%OBJ%\gdt.o" ^
     "%OBJ%\isr_wrappers.o" ^
     "%OBJ%\fonts.o" ^
     "%OBJ%\console.o" ^
@@ -49,6 +52,11 @@ echo Creating floppy image...
 copy /b "%BIN%\boot.bin" + "%BIN%\main.bin" + "%BIN%\kernel.bin" + models\cubo.jos "%OUT%\floppy.img" >nul
 
 echo Running QEMU...
-qemu-system-x86_64 -accel tcg,thread=multi -cpu max -m 256 -drive format=raw,file="%OUT%\floppy.img"
+qemu-system-i386 -accel tcg,thread=single -cpu max -m 256 ^
+    -drive format=raw,file="%OUT%\floppy.img",index=0,if=floppy ^
+    -d int,cpu_reset,guest_errors ^
+    -D log.txt ^
+    -no-reboot ^
+    -no-shutdown
 
 pause
