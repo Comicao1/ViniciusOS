@@ -2,7 +2,7 @@ import sys
 import os
 
 SECTOR_SIZE = 512
-SECTOR_COUNT = 64
+SECTOR_COUNT = 32
 BLOCK_SIZE = SECTOR_SIZE * SECTOR_COUNT  # 16384 bytes
 
 filename = sys.argv[1]

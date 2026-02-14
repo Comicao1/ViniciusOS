@@ -369,7 +369,7 @@ PModeMain:
     mov fs, ax
     mov ss, ax
     mov gs, ax
-    mov ebp, 0x9C00
+    mov ebp, 0x40000
     mov esp, ebp
 
     in al, 0x92
